@@ -7,6 +7,7 @@
 
 #include "structs.h"
 #include "ini_model.h"
+#include "gamepad_model.h"
 
 /* Appends the full path (malloc'd char*) of every *.prx in GOLDHEN_PLUGINS_DIR
  * to out, sorted case-insensitively. Returns the number of entries. */
@@ -23,5 +24,13 @@ int storage_load_state(pm_model_t* m);
  * plugins.ini atomically (tmp + rename), then fixes permissions.
  * Returns 0 on success, -1 on failure. */
 int storage_save_state(const pm_model_t* m);
+
+/* Loads gamepad.ini into m; a missing file yields an empty model.
+ * Returns 0 on success, -1 on read/parse failure. */
+int storage_load_gamepad(gp_model_t* m);
+
+/* Backs up gamepad.ini once and regenerates it atomically (tmp + rename),
+ * then fixes permissions. Returns 0 on success, -1 on failure. */
+int storage_save_gamepad(const gp_model_t* m);
 
 #endif /* STORAGE_H */

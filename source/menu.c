@@ -22,8 +22,15 @@ void SetMenu(int id)
 			break;
 
 		case MENU_PLUGINS:
-			menu_old_sel[MENU_PLUGINS] = 0;
+			/* keep the cursor when coming back from the gamepad screen */
+			if (menu_id == MENU_TARGETS)
+				menu_old_sel[MENU_PLUGINS] = 0;
 			Draw_PluginsMenu_Ani();
+			break;
+
+		case MENU_GAMEPAD:
+			menu_old_sel[MENU_GAMEPAD] = 0;
+			Draw_GamepadMenu_Ani();
 			break;
 	}
 
@@ -99,6 +106,10 @@ void drawScene(void)
 
 		case MENU_PLUGINS:
 			doPluginsMenu();
+			break;
+
+		case MENU_GAMEPAD:
+			doGamepadMenu();
 			break;
 	}
 }

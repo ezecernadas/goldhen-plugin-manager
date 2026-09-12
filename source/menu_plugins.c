@@ -2,6 +2,7 @@
  * Plugins screen: one checkbox per .prx for the selected target.
  */
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 
 #include "app.h"
@@ -21,6 +22,19 @@
 static const char* plugin_at(int index)
 {
 	return list_get_item(app.plugins, index);
+}
+
+static bool is_gamepad_helper(const char* path)
+{
+	const char* base = path ? strrchr(path, '/') : NULL;
+
+	base = base ? base + 1 : path;
+	return base && strcasecmp(base, GAMEPAD_HELPER_PRX) == 0;
+}
+
+bool plugins_cursor_is_gamepad_helper(void)
+{
+	return is_gamepad_helper(plugin_at(menu_sel));
 }
 
 static void draw_row(int index, int y, u8 alpha)
@@ -103,7 +117,7 @@ void Draw_PluginsMenu_Ani(void)
 		u8 game_a = (u8)(_game_a < 0 ? 0 : _game_a);
 
 		if (game_a > 0)
-			draw_list(0, game_a);
+			draw_list(menu_old_sel[MENU_PLUGINS], game_a);
 
 		SDL_RenderPresent(renderer);
 
@@ -194,6 +208,12 @@ void doPluginsMenu(void)
 
 	else if (orbisPadGetButtonPressed(ORBIS_PAD_BUTTON_CROSS))
 		toggle_selected();
+
+	else if (orbisPadGetButtonPressed(ORBIS_PAD_BUTTON_SQUARE) && plugins_cursor_is_gamepad_helper())
+	{
+		SetMenu(MENU_GAMEPAD);
+		return;
+	}
 
 	else if (orbisPadGetButtonPressed(ORBIS_PAD_BUTTON_CIRCLE))
 	{

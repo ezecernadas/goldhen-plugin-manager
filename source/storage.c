@@ -285,3 +285,68 @@ int storage_save_state(const pm_model_t* m)
 	LOG("Saved " GOLDHEN_INI);
 	return 0;
 }
+
+int storage_load_gamepad(gp_model_t* m)
+{
+	char* text;
+	int ret;
+
+	if (!m)
+		return -1;
+
+	if (file_exists(GAMEPAD_INI) != SUCCESS)
+	{
+		LOG("No " GAMEPAD_INI " found, starting empty");
+		return 0;
+	}
+
+	text = read_text_file(GAMEPAD_INI);
+	if (!text)
+	{
+		LOG("Cannot read " GAMEPAD_INI);
+		return -1;
+	}
+
+	ret = gp_ini_parse(m, text);
+	free(text);
+	if (ret != 0)
+	{
+		LOG("Failed to parse " GAMEPAD_INI);
+		gp_model_clear(m);   /* never keep a half-parsed model that could be saved back */
+		return -1;
+	}
+
+	LOG("Loaded " GAMEPAD_INI ": %d sections", (int)m->count);
+	return 0;
+}
+
+int storage_save_gamepad(const gp_model_t* m)
+{
+	char* ini;
+	int ret;
+
+	// One-time backup of the original file
+	if (file_exists(GAMEPAD_INI) == SUCCESS && file_exists(GAMEPAD_INI_BAK) != SUCCESS)
+	{
+		if (copy_file(GAMEPAD_INI, GAMEPAD_INI_BAK) != SUCCESS)
+		{
+			LOG("Backup to " GAMEPAD_INI_BAK " failed, aborting save");
+			return -1;
+		}
+		LOG("Backed up " GAMEPAD_INI " to " GAMEPAD_INI_BAK);
+	}
+
+	ini = gp_ini_serialize(m);
+	if (!ini)
+		return -1;
+
+	ret = write_text_atomic(GAMEPAD_INI_TMP, GAMEPAD_INI, ini);
+	free(ini);
+	if (ret != 0)
+		return -1;
+
+	chmod(GAMEPAD_INI, 0777);
+
+	LOG("Saved " GAMEPAD_INI);
+	return 0;
+}

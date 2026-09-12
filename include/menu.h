@@ -19,6 +19,7 @@ enum menu_screen_ids
 {
 	MENU_TARGETS,		/* 0 - Global + installed games */
 	MENU_PLUGINS,		/* 1 - Plugin checkboxes for the selected target */
+	MENU_GAMEPAD,		/* 2 - Gamepad Helper settings for the selected target */
 	TOTAL_MENU_IDS
 };
 
@@ -29,6 +30,7 @@ enum texture_index
 	pslogo_png_index,
 	footer_ico_circle_png_index,
 	footer_ico_cross_png_index,
+	footer_ico_square_png_index,
 	header_ico_opt_png_index,
 	header_ico_xmb_png_index,
 	help_png_index,

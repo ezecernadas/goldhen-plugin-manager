@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include "structs.h"
 #include "ini_model.h"
+#include "gamepad_model.h"
 
 #define APP_TITLE_ID                "PLGM00001"
 #define APP_VERSION                 "01.00"
@@ -27,6 +28,12 @@
 #define PM_STATE_JSON               GOLDHEN_PATH "/plugin_manager.json"
 #define PM_STATE_JSON_TMP           GOLDHEN_PATH "/plugin_manager.json.tmp"
 #define PM_STATE_JSON_BROKEN        GOLDHEN_PATH "/plugin_manager.json.broken"
+
+/* Gamepad Helper plugin configuration */
+#define GAMEPAD_INI                 GOLDHEN_PATH "/gamepad.ini"
+#define GAMEPAD_INI_TMP             GOLDHEN_PATH "/gamepad.ini.tmp"
+#define GAMEPAD_INI_BAK             GOLDHEN_PATH "/gamepad.ini.bak"
+#define GAMEPAD_HELPER_PRX          "gamepad_helper.prx"
 
 #define APPDB_PATH                  "/system_data/priv/mms/app.db"
 #define APPMETA_ICON_FMT            "/user/appmeta/%s/icon0.png"
@@ -67,6 +74,8 @@ typedef struct pm_app
 	char target_name[128];  /* "Global" or the game name */
 	bool dirty;             /* unsaved toggles on the plugins screen */
 	bool read_only;         /* state could not be loaded: toggling/saving disabled */
+	gp_model_t* gamepad;    /* gamepad.ini model (Gamepad Helper plugin config) */
+	bool gamepad_dirty;     /* unsaved edits on the gamepad screen */
 } pm_app_t;
 
 extern pm_app_t app;

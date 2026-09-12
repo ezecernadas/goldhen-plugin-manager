@@ -34,6 +34,8 @@
 
 pm_app_t app = {
 	.model = NULL,
+	.gamepad = NULL,
+	.gamepad_dirty = false,
 	.installed = NULL,
 	.plugins = NULL,
 	.target_id = PM_TARGET_DEFAULT,
@@ -55,7 +57,12 @@ static const char* get_button_prompts(int id)
 	switch (id)
 	{
 		case MENU_PLUGINS:
-			return "\x10 Toggle    \x13 Save & Back";
+			return plugins_cursor_is_gamepad_helper()
+				? "\x10 Toggle    \x11 Configure    \x13 Save & Back"
+				: "\x10 Toggle    \x13 Save & Back";
+
+		case MENU_GAMEPAD:
+			return "\x10 Change    \x13 Save & Back";
 
 		case MENU_TARGETS:
 		default:
@@ -102,6 +109,7 @@ static int LoadTextures_Menu(void)
 	load_menu_texture(pslogo, png);
 	load_menu_texture(footer_ico_circle, png);
 	load_menu_texture(footer_ico_cross, png);
+	load_menu_texture(footer_ico_square, png);
 	load_menu_texture(header_ico_opt, png);
 	load_menu_texture(header_ico_xmb, png);
 	load_menu_texture(help, png);
@@ -125,6 +133,7 @@ static void registerSpecialChars(void)
 	// Register button icons
 	RegisterSpecialCharacter(orbisPadGetConf()->crossButtonOK ? CHAR_BTN_X : CHAR_BTN_O, 0, 1.0, &menu_textures[footer_ico_cross_png_index]);
 	RegisterSpecialCharacter(orbisPadGetConf()->crossButtonOK ? CHAR_BTN_O : CHAR_BTN_X, 0, 1.0, &menu_textures[footer_ico_circle_png_index]);
+	RegisterSpecialCharacter(CHAR_BTN_S, 0, 1.0, &menu_textures[footer_ico_square_png_index]);
 }
 
 static void helpFooter(int id)
@@ -183,6 +192,12 @@ static int pm_app_init(void)
 		show_message("State could not be loaded; saving is disabled.");
 	}
 
+	app.gamepad = gp_model_new();
+	if (!app.gamepad)
+		return 0;
+	if (storage_load_gamepad(app.gamepad) != 0)
+		show_message("gamepad.ini could not be read; the Gamepad Helper screen starts empty.");
+
 	app.installed = appdb_load_installed();
 	if (!app.installed)
 		return 0;
@@ -211,9 +226,11 @@ static void pm_app_free(void)
 	storage_free_prx(app.plugins);
 	appdb_free(app.installed);
 	pm_model_free(app.model);
+	gp_model_free(app.gamepad);
 	app.plugins = NULL;
 	app.installed = NULL;
 	app.model = NULL;
+	app.gamepad = NULL;
 }
 
 

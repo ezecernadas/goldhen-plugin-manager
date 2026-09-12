@@ -11,7 +11,13 @@ It does one thing only: toggle plugins on and off. No cheats, no downloads, no u
 1. **Targets** — the fixed **Global** entry (the `[default]` section) followed by every installed
    game/app with its icon and name. D-pad to move, Cross to open, Circle to exit.
 2. **Plugins** — one checkbox per `.prx` found in `/data/GoldHEN/plugins/`. Cross toggles a
-   plugin for the selected target; Circle saves and goes back.
+   plugin for the selected target; Circle saves and goes back. On the `gamepad_helper.prx` row,
+   Square opens the Gamepad Helper screen.
+3. **Gamepad Helper** — edits the `gamepad.ini` section of the selected target (`[default]` for
+   Global): dead zones, touchpad buttons, button remapping and vibration intensity. Left/Right
+   change a value (L1/R1 step the dead zones by 10), Cross cycles the on/off rows (default, on, off) and steps every other row forward; L1/R1 move the dead-zone values by 10, Circle saves
+   and goes back. The value `default` means the key is absent from the file, so the plugin uses
+   its own default.
 
 GoldHEN reads `plugins.ini` when a game process is launched, so changes apply the next time
 the game is (re)launched.
@@ -24,6 +30,8 @@ the game is (re)launched.
 | `/data/GoldHEN/plugins.ini.bak` | One-time backup of the original file, taken before the first write. |
 | `/data/GoldHEN/plugin_manager.json` | Source of truth: every target, every plugin (enabled or not) and its arguments. |
 | `/data/GoldHEN/plugin_manager.json.broken` | Where an unreadable sidecar is moved before re-importing `plugins.ini`. |
+| `/data/GoldHEN/gamepad.ini` | Gamepad Helper config, regenerated in full when saved from its screen (tmp + rename). Unknown keys are preserved; comment lines are dropped. |
+| `/data/GoldHEN/gamepad.ini.bak` | One-time backup of the original `gamepad.ini`, taken before the first write. |
 
 On first run the existing `plugins.ini` is imported into the sidecar without losing anything:
 plugin arguments (`plugin.prx ; args`), sections of games that are not installed, and plugins
@@ -43,9 +51,9 @@ that are no longer on disk are all kept in the JSON even though they are not sho
 ### Installed game detection
 
 Games are read from `/system_data/priv/mms/app.db` (`tbl_appinfo`, keys `TITLE` and `CATEGORY`).
-The `CATEGORY` values used to filter out system apps are a hypothesis (`gd`, `gp`, `gde`) defined
-in `include/app.h` as `APPDB_USER_CATEGORIES`; adjust them if games are missing or system apps
-appear.
+The `CATEGORY` values used to keep only games and user apps (`gd` = games, `gde` = homebrew and
+user apps; `gda`, `gdi`, `gdn` are system applications) were verified against a real `app.db` and
+are defined in `include/app.h` as `APPDB_USER_CATEGORIES`.
 
 ## Building
 

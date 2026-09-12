@@ -12,6 +12,7 @@ LIBS        := -lc -lkernel -lSceUserService -lScePigletv2VSH -lSceSysmodule -lS
 # Host compiler and binary for `make test`.
 HOSTCC      ?= cc
 TESTBIN     := build/test_ini_model
+TESTBIN_GP  := build/test_gamepad_model
 
 # Additional compile flags.
 EXTRAFLAGS  := -fcolor-diagnostics -Wall -D__PS4__
@@ -110,11 +111,13 @@ $(INTDIR)/%.o: $(PROJDIR)/%.cpp
 
 clean:
 	rm -f $(CONTENT_ID).pkg pkg.gp4 sce_sys/param.sfo eboot.bin \
-		$(INTDIR)/$(PROJDIR).elf $(INTDIR)/$(PROJDIR).oelf $(OBJS) $(TESTBIN)
+		$(INTDIR)/$(PROJDIR).elf $(INTDIR)/$(PROJDIR).oelf $(OBJS) $(TESTBIN) $(TESTBIN_GP)
 
 #---------------------------------------------------------------------------------
 # Host-side unit tests for the pure ini/json model (no PS4 toolchain required).
 test:
 	@mkdir -p build
 	$(HOSTCC) -std=c99 -Wall -Wextra -Werror -pedantic -Iinclude -o $(TESTBIN) source/ini_model.c tests/test_ini_model.c
+	$(HOSTCC) -std=c99 -Wall -Wextra -Werror -pedantic -Iinclude -o $(TESTBIN_GP) source/gamepad_model.c tests/test_gamepad_model.c
 	./$(TESTBIN)
+	./$(TESTBIN_GP)
