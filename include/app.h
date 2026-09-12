@@ -10,7 +10,7 @@
 #include "gamepad_model.h"
 
 #define APP_TITLE_ID                "PLGM00001"
-#define APP_VERSION                 "01.00"
+#define APP_VERSION                 "01.10"
 
 #define APP_ASSETS_PATH             "/mnt/sandbox/" APP_TITLE_ID "_000/app0/assets/"
 
