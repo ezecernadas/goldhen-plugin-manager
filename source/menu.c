@@ -83,16 +83,6 @@ void DrawScrollBar(int selIndex, int max, int maxPerPage, int xOff, u8 alpha)
 	DrawTextureCenteredX(&menu_textures[scroll_lock_png_index], xOff, y + (int)((float)(yTotal - cursor_h) * pLoc), 0, menu_textures[scroll_lock_png_index].width, cursor_h, 0xffffff00 | alpha);
 }
 
-u8 CalculateAlphaList(int curIndex, int selIndex, int max)
-{
-	int mult = ((float)0xFF / (float)max * 7) / 4;
-	int dif = (selIndex - curIndex);
-	if (dif < 0)
-		dif *= -1;
-	int alpha = (0xFF - (dif * mult));
-	return (u8)(alpha < 0 ? 0 : alpha);
-}
-
 void DrawSelectionMark(int y, int y_inc, int arrow_x, u8 alpha)
 {
 	DrawTexture(&menu_textures[mark_line_png_index], 0, y, 0, SCREEN_WIDTH, y_inc, 0xFFFFFF00 | alpha);

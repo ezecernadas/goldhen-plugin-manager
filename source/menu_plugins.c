@@ -63,13 +63,10 @@ static void draw_list(int selIndex, u8 alpha)
 
 	for (i = first; i < first + maxPerPage && i < count; i++)
 	{
-		u8 a = ((alpha * CalculateAlphaList(i, selIndex, maxPerPage)) / 0xFF);
-
 		if (i == selIndex)
 			DrawSelectionMark(y, PLUGIN_ROW_HEIGHT, MENU_ICON_OFF + MENU_TITLE_OFF, alpha);
 
-		if (a)
-			draw_row(i, y, a);
+		draw_row(i, y, alpha);
 
 		y += PLUGIN_ROW_HEIGHT;
 	}

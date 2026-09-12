@@ -113,7 +113,6 @@ void drawScene(void);
 void move_selection_back(int count, int steps);
 void move_selection_fwd(int count, int steps);
 void DrawScrollBar(int selIndex, int max, int maxPerPage, int xOff, u8 alpha);
-u8 CalculateAlphaList(int curIndex, int selIndex, int max);
 void DrawSelectionMark(int y, int y_inc, int arrow_x, u8 alpha);
 
 // orbis_jbc.c
