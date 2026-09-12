@@ -16,7 +16,12 @@
 #include <sys/types.h>
 
 #include <dbglogger.h>
+#ifdef DEBUG_ENABLE_LOG
+void pm_debug_log(const char* fmt, ...);
+#define LOG pm_debug_log
+#else
 #define LOG dbglogger_log
+#endif
 
 #include <sys/stat.h>
 

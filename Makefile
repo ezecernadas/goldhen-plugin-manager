@@ -1,19 +1,26 @@
 # Package metadata.
-TITLE       := PS4 Cheats Manager
-VERSION     := 01.22
-TITLE_ID    := CHTM00777
-CONTENT_ID  := IV0000-CHTM00777_00-PS4CHEATSMANAGER
+TITLE       := GoldHEN Plugin Manager
+VERSION     := 01.00
+TITLE_ID    := PLGM00001
+CONTENT_ID  := IV0000-PLGM00001_00-GOLDHENPLUGINMGR
 
 # Libraries linked into the ELF.
-LIBS        := -lc -lkernel -lSceAudioOut -lSceUserService -lScePigletv2VSH -lSceSysmodule -lSceFreeType \
-               -lScePad -lSceSystemService -lSceSaveData -lSceCommonDialog -lSceMsgDialog -lSceNet \
-               -lSceNetCtl -lSceImeDialog -lSDL2 -lcjson -ldbglogger -lz -ljbc -lmxml -lcurl -lpolarssl -lSQLite
+LIBS        := -lc -lkernel -lSceUserService -lScePigletv2VSH -lSceSysmodule -lSceFreeType \
+               -lScePad -lSceSystemService -lSceCommonDialog -lSceMsgDialog -lSceAudioOut -lSceVideoOut \
+               -lSDL2 -ldbglogger -ljbc -lSQLite
+
+# Host compiler and binary for `make test`.
+HOSTCC      ?= cc
+TESTBIN     := build/test_ini_model
 
 # Additional compile flags.
 EXTRAFLAGS  := -fcolor-diagnostics -Wall -D__PS4__
 
 ifeq ($(DEBUGLOG),1)
     EXTRAFLAGS += -DDEBUG_ENABLE_LOG
+    ifneq ($(DEBUGLOG_DEST),)
+        EXTRAFLAGS += -DDEBUG_LOG_DEST=\"$(DEBUGLOG_DEST)\"
+    endif
 endif
 
 # Asset and module directories.
@@ -58,26 +65,38 @@ ifeq ($(UNAME_S),Darwin)
 		CDIR    := macos
 endif
 
+.PHONY: all clean test
+
+# PkgTool.Core is a .NET Core 3.0 binary: it needs invariant globalization (no ICU)
+# and OpenSSL 1.1. On distros that only ship OpenSSL 3, point PKGTOOL_LIBSSL_DIR at a
+# directory containing libssl.so.1.1 / libcrypto.so.1.1 (e.g. extracted from the
+# Ubuntu focal libssl1.1 .deb).
+PKGTOOL_ENV := DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+ifneq ($(PKGTOOL_LIBSSL_DIR),)
+    PKGTOOL_ENV += LD_LIBRARY_PATH=$(PKGTOOL_LIBSSL_DIR)
+endif
+PKGTOOL     := $(PKGTOOL_ENV) $(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core
+
 all: $(CONTENT_ID).pkg
 
 $(CONTENT_ID).pkg: pkg.gp4
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core pkg_build $< .
+	$(PKGTOOL) pkg_build $< .
 
 pkg.gp4: eboot.bin sce_sys/about/right.sprx sce_sys/param.sfo sce_sys/icon0.png sce_sys/save_data.png $(LIBMODULES) $(ASSETS)
 	$(TOOLCHAIN)/bin/$(CDIR)/create-gp4 -out $@ --content-id=$(CONTENT_ID) --files "$^"
 
 sce_sys/param.sfo: Makefile
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_new $@
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ APP_TYPE --type Integer --maxsize 4 --value 1 
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ APP_VER --type Utf8 --maxsize 8 --value '$(VERSION)'
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ ATTRIBUTE --type Integer --maxsize 4 --value 32  
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ CATEGORY --type Utf8 --maxsize 4 --value 'gde'  
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ CONTENT_ID --type Utf8 --maxsize 48 --value '$(CONTENT_ID)'
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ DOWNLOAD_DATA_SIZE --type Integer --maxsize 4 --value 0 
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ SYSTEM_VER --type Integer --maxsize 4 --value 0  
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ TITLE --type Utf8 --maxsize 128 --value '$(TITLE)'
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ TITLE_ID --type Utf8 --maxsize 12 --value '$(TITLE_ID)'
-	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ VERSION --type Utf8 --maxsize 8 --value '$(VERSION)'
+	$(PKGTOOL) sfo_new $@
+	$(PKGTOOL) sfo_setentry $@ APP_TYPE --type Integer --maxsize 4 --value 1 
+	$(PKGTOOL) sfo_setentry $@ APP_VER --type Utf8 --maxsize 8 --value '$(VERSION)'
+	$(PKGTOOL) sfo_setentry $@ ATTRIBUTE --type Integer --maxsize 4 --value 32  
+	$(PKGTOOL) sfo_setentry $@ CATEGORY --type Utf8 --maxsize 4 --value 'gde'  
+	$(PKGTOOL) sfo_setentry $@ CONTENT_ID --type Utf8 --maxsize 48 --value '$(CONTENT_ID)'
+	$(PKGTOOL) sfo_setentry $@ DOWNLOAD_DATA_SIZE --type Integer --maxsize 4 --value 0 
+	$(PKGTOOL) sfo_setentry $@ SYSTEM_VER --type Integer --maxsize 4 --value 0  
+	$(PKGTOOL) sfo_setentry $@ TITLE --type Utf8 --maxsize 128 --value '$(TITLE)'
+	$(PKGTOOL) sfo_setentry $@ TITLE_ID --type Utf8 --maxsize 12 --value '$(TITLE_ID)'
+	$(PKGTOOL) sfo_setentry $@ VERSION --type Utf8 --maxsize 8 --value '$(VERSION)'
 
 eboot.bin: $(INTDIR) $(OBJS)
 	$(LD) $(INTDIR)/*.o -o $(INTDIR)/$(PROJDIR).elf $(LDFLAGS)
@@ -91,11 +110,11 @@ $(INTDIR)/%.o: $(PROJDIR)/%.cpp
 
 clean:
 	rm -f $(CONTENT_ID).pkg pkg.gp4 sce_sys/param.sfo eboot.bin \
-		$(INTDIR)/$(PROJDIR).elf $(INTDIR)/$(PROJDIR).oelf $(OBJS)
+		$(INTDIR)/$(PROJDIR).elf $(INTDIR)/$(PROJDIR).oelf $(OBJS) $(TESTBIN)
 
 #---------------------------------------------------------------------------------
-createzip:
-	@echo "creating appdata.zip ..."
-	@[ -d assets/misc ] || mkdir -p assets/misc
-	@rm -fr assets/misc/appdata.zip
-	@zip -r assets/misc/appdata.zip cheats/json/ cheats/shn/ cheats/mc4/ cheats/misc/ patches/xml/ patches/misc/
+# Host-side unit tests for the pure ini/json model (no PS4 toolchain required).
+test:
+	@mkdir -p build
+	$(HOSTCC) -std=c99 -Wall -Wextra -Werror -pedantic -Iinclude -o $(TESTBIN) source/ini_model.c tests/test_ini_model.c
+	./$(TESTBIN)

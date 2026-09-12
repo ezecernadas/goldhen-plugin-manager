@@ -20,28 +20,6 @@ typedef struct list_s
 	size_t count;
 } list_t;
 
-typedef struct option_entry
-{
-    char * line;
-    char * * name;
-    char * * value;
-    int id;
-    int size;
-    int sel;
-} option_entry_t;
-
-typedef struct code_entry
-{
-    uint8_t type;
-    char * name;
-    char * file;
-    uint8_t activated;
-    int options_count;
-    char * codes;
-    option_entry_t * options;
-} code_entry_t;
-
-
 //---  Generic list functions ---
 
 list_t * list_alloc(void);

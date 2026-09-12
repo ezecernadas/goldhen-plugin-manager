@@ -1,16 +1,16 @@
-void Draw_AboutMenu_Ani(void);
-void Draw_AboutMenu(int ll);
+#ifndef __PLGM_MENU_GUI_H__
+#define __PLGM_MENU_GUI_H__
 
-void Draw_UserCheatsMenu_Ani(game_list_t * list);
-void Draw_UserCheatsMenu(game_list_t * list, int menuSel, u8 alpha);
-void Draw_CheatsMenu_Selection_Ani();
-void Draw_CheatsMenu_Selection(int menuSel, u32 rgba);
-void Draw_CheatsMenu_View_Ani_Exit(void);
-void Draw_CheatsMenu_View_Ani(const char* title);
-void Draw_CheatsMenu_View(const char* title);
-void Draw_CheatsMenu_Options_Ani_Exit(void);
-void Draw_CheatsMenu_Options_Ani(void);
-void Draw_CheatsMenu_Options(void);
+#include "types.h"
 
-void Draw_OptionsMenu_Ani(void);
-void Draw_OptionsMenu(void);
+// menu_targets.c
+void doTargetsMenu(void);
+void Draw_TargetsMenu(u8 alpha);
+void Draw_TargetsMenu_Ani(void);
+
+// menu_plugins.c
+void doPluginsMenu(void);
+void Draw_PluginsMenu(u8 alpha);
+void Draw_PluginsMenu_Ani(void);
+
+#endif

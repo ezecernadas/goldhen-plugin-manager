@@ -57,5 +57,7 @@ dkms.conf
 *.elf
 *.oelf
 *.self
-/**/sce_sys/
-/**/build/
+sce_sys/param.sfo
+build/
+eboot.bin
+pkg.gp4

@@ -1,121 +1,121 @@
-# PS4 Cheats Manager
+# GoldHEN Plugin Manager
 
-[![Downloads][img_downloads]][app_downloads] [![Release][img_latest]][app_latest] [![License][img_license]][app_license]
-[![Build package](https://github.com/bucanero/PS4CheatsManager/actions/workflows/build.yml/badge.svg)](https://github.com/bucanero/PS4CheatsManager/actions/workflows/build.yml)
+A minimal PlayStation 4 homebrew application for [GoldHEN](https://github.com/GoldHEN/GoldHEN)
+that manages which plugins are loaded, globally and per game, without editing `plugins.ini`
+by hand over FTP.
 
-An open-source PlayStation 4 cheat code manager for [GoldHEN](https://github.com/GoldHEN/GoldHEN).
+It does one thing only: toggle plugins on and off. No cheats, no downloads, no updater.
 
-![image](./docs/screenshots/main-menu.jpg)
+## Screens
 
-<details>
-<summary>Screenshots Gallery (Click to Expand)</summary>
+1. **Targets** — the fixed **Global** entry (the `[default]` section) followed by every installed
+   game/app with its icon and name. D-pad to move, Cross to open, Circle to exit.
+2. **Plugins** — one checkbox per `.prx` found in `/data/GoldHEN/plugins/`. Cross toggles a
+   plugin for the selected target; Circle saves and goes back.
 
-![image](./docs/screenshots/cheatsmgr-xmb.jpg)
-![image](./docs/screenshots/game-list.jpg)
-![image](./docs/screenshots/hdd-patch.jpg)
+GoldHEN reads `plugins.ini` when a game process is launched, so changes apply the next time
+the game is (re)launched.
 
-</details>
+## Files
 
-**PS4 Cheats Manager** is a simple PS4 homebrew application that manages `JSON`, `SHN`, `XML`, and `MC4` cheat codes files.
+| Path | Purpose |
+|---|---|
+| `/data/GoldHEN/plugins.ini` | Regenerated in full on every save (written to `plugins.ini.tmp`, then renamed). |
+| `/data/GoldHEN/plugins.ini.bak` | One-time backup of the original file, taken before the first write. |
+| `/data/GoldHEN/plugin_manager.json` | Source of truth: every target, every plugin (enabled or not) and its arguments. |
+| `/data/GoldHEN/plugin_manager.json.broken` | Where an unreadable sidecar is moved before re-importing `plugins.ini`. |
 
-# Download
+On first run the existing `plugins.ini` is imported into the sidecar without losing anything:
+plugin arguments (`plugin.prx ; args`), sections of games that are not installed, and plugins
+that are no longer on disk are all kept in the JSON even though they are not shown.
 
-Get the [latest version here][app_latest].
+### Notes on `plugins.ini`
 
-<details>
-<summary>Nightly Builds (Click to Expand)</summary>
+- Plugin arguments after `;` on the same line are preserved verbatim when a plugin is disabled
+  and re-enabled.
+- Because `;` introduces arguments, a `;` at the start of a line **cannot** be used to comment out
+  a plugin: such a line has an empty path and is dropped. Disabled plugins are simply omitted from
+  the regenerated file and remembered in `plugin_manager.json`.
+- Lines starting with `#` are treated as comments and are not preserved.
+- After every save the app applies `chmod 0777` to `plugins.ini` and to every file in
+  `/data/GoldHEN/plugins/`.
 
-- Login to GitHub [(this is required to download artifacts)](https://docs.github.com/en/actions/managing-workflow-runs/downloading-workflow-artifacts#:~:text=Who%20can%20use,download%20workflow%20artifacts.).
-- Click on a build in the **[Actions](../../actions)** Tab.
-  - ![image](https://github.com/bucanero/apollo-ps4/assets/37698908/2e52961b-04ef-42f1-9453-78b3ceb24afc)
-- Click on the artifact to download the pkg zip.
-  - ![image](https://github.com/bucanero/apollo-ps4/assets/37698908/aaeb523e-eab9-43f7-a993-5fa902ada1b7)
+### Installed game detection
 
-</details>
+Games are read from `/system_data/priv/mms/app.db` (`tbl_appinfo`, keys `TITLE` and `CATEGORY`).
+The `CATEGORY` values used to filter out system apps are a hypothesis (`gd`, `gp`, `gde`) defined
+in `include/app.h` as `APPDB_USER_CATEGORIES`; adjust them if games are missing or system apps
+appear.
 
-## Changelog
+## Building
 
-See the [latest changes here](CHANGELOG.md).
+Requirements:
 
-# Donations
-
-My GitHub projects are open to a [Patreon sponsor program](https://patreon.com/dparrino). If you feel that my tools helped you in some way or you would like to support future developments, you can consider a [PayPal donation](https://www.paypal.me/bucanerodev).
-
-# Setup instructions
-
-No special setup is needed. Just download the latest [`IV0000-CHTM00777_00-PS4CHEATSMANAGER.pkg`](https://github.com/bucanero/PS4CheatsManager/releases/latest/download/IV0000-CHTM00777_00-PS4CHEATSMANAGER.pkg) package and install it on your PlayStation 4.
-On first run, the application will detect and setup the required user settings.
-
-# Usage
-
-Using the application is simple and straight-forward: 
-
- - Move <kbd>UP</kbd>/<kbd>DOWN</kbd> to select the cheat file you want to view, and press ![X button](https://github.com/bucanero/pkgi-ps3/raw/master/data/CROSS.png). The cheat list screen will show the available codes for the game.
- - To view the item's details, press ![Triangle](https://github.com/bucanero/pkgi-ps3/raw/master/data/TRIANGLE.png).
-It will open the context menu on the screen. Press ![O button](https://github.com/bucanero/pkgi-ps3/raw/master/data/CIRCLE.png) to return to the list.
- - To reload the list, press ![Square](https://github.com/bucanero/pkgi-ps3/raw/master/data/SQUARE.png).
- - Press <kbd>L1</kbd>/<kbd>L2</kbd> or <kbd>R1</kbd>/<kbd>R2</kbd> trigger buttons to move pages up or down.
-
-# Online Database
-
-The application also provides direct access to the Online [Cheat](https://github.com/GoldHEN/GoldHEN_Cheat_Repository) and [Patch](https://github.com/illusion0001/PS4-PS5-Game-Patch) databases, the official GoldHEN repositories of cheats and custom game patches for PlayStation 4 games.
-
-# Credits
-
-* [Bucanero](https://github.com/bucanero): Project developer
-
-### GoldHEN credits
-
-* [Ctn123](https://github.com/ctn123): Cheat Engine
-* [illusion](https://github.com/illusion0001): Patch Engine
-* [Shiningami](https://github.com/ScriptSK): Cheat Engine
-* [SiSTRo](https://github.com/SiSTR0): [GoldHEN](https://github.com/GoldHEN/GoldHEN)
-* [Kameleon](https://github.com/kmeps4): QA Support
-
-### Artemis PS3 credits
-
-* [Dnawrkshp](https://github.com/Dnawrkshp/): [Artemis PS3](https://github.com/Dnawrkshp/ArtemisPS3)
-* [Berion](https://www.psx-place.com/members/berion.1431/): GUI design
-
-# Building
-
-You need to have installed:
-
-- [Open Orbis SDK](https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/)
-- [cJSON](https://github.com/bucanero/cJSON) library
-- [SDL2](https://github.com/PacBrew/SDL/tree/ps4) library
-- [libJbc](https://github.com/bucanero/ps4-libjbc) library
-- [SQLite](https://github.com/bucanero/libSQLite-ps4) library
-- [Mini-XML](https://github.com/bucanero/mxml) library
-- [PolarSSL](https://github.com/bucanero/oosdk_libraries/tree/master/polarssl-1.3.9) library
-- [cURL](https://github.com/bucanero/oosdk_libraries/tree/master/curl-7.64.1) library
+- [Open Orbis SDK](https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/) (`OO_PS4_TOOLCHAIN` must point to it)
+- [SDL2](https://github.com/bucanero/SDL-PS4/tree/ps4) library. The `libSDL2.a` bundled with the
+  OpenOrbis toolchain release crashes inside `SDL_Init()` on the console (verified); build the
+  `ps4` branch of the fork and copy its `libSDL2.a` over the toolchain one.
+- [libjbc](https://github.com/bucanero/ps4-libjbc) library
+- [SQLite](https://github.com/bucanero/libSQLite-ps4) library, with `patches/libSQLite-ps4-libc-vfs.patch`
+  applied before `make install` (see below)
 - [dbglogger](https://github.com/bucanero/dbglogger) library
 
-Run `make` to create a release build. If you want to include the latest cheats and patches in your `.pkg` file, run `make createzip`.
+```
+export OO_PS4_TOOLCHAIN=/path/to/OpenOrbis/PS4Toolchain
+make            # builds IV0000-PLGM00001_00-GOLDHENPLUGINMGR.pkg
+make test       # runs the host-side unit tests of the ini/json model (needs only a C compiler)
+```
 
-You can also set the `PS3LOAD` environment variable to your PS4 IP address: `export PS3LOAD=tcp:x.x.x.x`.
-This will allow you to use `make run` and send `eboot.bin` directly to the [PS4Load listener](https://github.com/bucanero/ps4load).
+`PkgTool.Core` (shipped with the toolchain) is a .NET Core 3.0 binary that needs OpenSSL 1.1.
+On distributions that only ship OpenSSL 3 (Ubuntu 24.04 and later), extract the `libssl1.1`
+package somewhere and point the Makefile at it:
 
-To enable debug logging, build it with `make DEBUGLOG=1`. The application will send debug messages to
-UDP multicast address `239.255.0.100:30000`. To receive them you can use [socat][] on your computer:
+```
+export PKGTOOL_LIBSSL_DIR=/path/to/libssl1.1/usr/lib/x86_64-linux-gnu
+```
+
+On Ubuntu, the Debian-packaged `llvm-ar` is only available versioned; add
+`/usr/lib/llvm-18/bin` (or your LLVM version) to `PATH` before building the ported libraries.
+
+### Notes on the ported libraries
+
+- **SQLite VFS patch.** GoldHEN injects the plugins listed under `[default]` into every process,
+  including this application. At least one of them hooks `sceKernelOpen`, and calling it from
+  this process crashes with CE-34878-0 (the libc `open()` in the toolchain's static `libc.a`
+  is a raw syscall wrapper and is not affected). `patches/libSQLite-ps4-libc-vfs.patch` makes the
+  `orbis_rw` VFS use `open/read/lseek/write/close` from libc instead of the `sceKernel*`
+  wrappers. Apply it in the `libSQLite-ps4` checkout with `patch -p1 < .../libSQLite-ps4-libc-vfs.patch`.
+- **SDL-PS4 with a recent clang.** The fork's build expects clang 12. With clang 18 pass
+  `CFLAGS="-Wno-declaration-after-statement -Wno-error"` to `cmake`, drop the
+  `-Werror=declaration-after-statement` flag from its `CMakeLists.txt`, and use CMake 3.x
+  (CMake 4 rejects the fork's minimum-version declaration).
+
+`make test` compiles `source/ini_model.c` with the host compiler (`HOSTCC`, default `cc`) and
+runs `tests/test_ini_model.c`; it does not need the PS4 toolchain.
+
+To enable debug logging, build with `make DEBUGLOG=1`. The application then sends debug messages
+to UDP multicast address `239.255.0.100:30000`:
 
 ```
 $ socat udp4-recv:30000,ip-add-membership=239.255.0.100:0.0.0.0 -
 ```
 
-# License
+## Credits
 
-[PS4 Cheats Manager](https://github.com/bucanero/PS4CheatsManager/) - Copyright (C) 2022-2024 [Damian Parrino](https://twitter.com/dparrino)
+This project is a fork of [PS4 Cheats Manager](https://github.com/bucanero/PS4CheatsManager) by
+[Bucanero](https://github.com/bucanero), stripped down to plugin management. The rendering, input,
+dialog and privilege-escalation code comes from that project.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the [GNU General Public License][app_license] as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+- [Bucanero](https://github.com/bucanero): PS4 Cheats Manager, SDL-PS4, libjbc, libSQLite-ps4, dbglogger
+- [SiSTRo](https://github.com/SiSTR0): [GoldHEN](https://github.com/GoldHEN/GoldHEN)
+- [Dnawrkshp](https://github.com/Dnawrkshp/): [Artemis PS3](https://github.com/Dnawrkshp/ArtemisPS3) (original GUI code)
+- [Berion](https://www.psx-place.com/members/berion.1431/): GUI design
+- [OpenOrbis](https://github.com/OpenOrbis): PS4 toolchain
 
-[app_license]: https://github.com/bucanero/PS4CheatsManager/blob/main/LICENSE
-[app_downloads]: https://github.com/bucanero/PS4CheatsManager/releases
-[app_latest]: https://github.com/bucanero/PS4CheatsManager/releases/latest
-[img_license]: https://img.shields.io/github/license/bucanero/PS4CheatsManager.svg?maxAge=2592000
-[img_downloads]: https://img.shields.io/github/downloads/bucanero/PS4CheatsManager/total.svg?maxAge=3600
-[img_latest]: https://img.shields.io/github/release/bucanero/PS4CheatsManager.svg?maxAge=3600
-[socat]: http://www.dest-unreach.org/socat/
+## License
+
+GoldHEN Plugin Manager is based on PS4 Cheats Manager, Copyright (C) 2022-2024 Damian Parrino.
+
+This program is free software: you can redistribute it and/or modify it under the terms of the
+[GNU General Public License](LICENSE) as published by the Free Software Foundation, either
+version 3 of the License, or (at your option) any later version.

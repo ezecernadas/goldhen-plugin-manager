@@ -17,7 +17,9 @@
 #include <orbis/SystemService.h>
 #include "orbisPad.h"
 
+#ifndef LOG
 #define LOG dbglogger_log
+#endif
 
 static OrbisPadConfig orbisPadConf;
 static int orbispad_initialized = 0;

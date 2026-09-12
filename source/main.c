@@ -1,23 +1,23 @@
-/* 
-	Cheats Manager PS4 main.c
+/*
+	GoldHEN Plugin Manager main.c
 */
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <dirent.h>
 #include <stdbool.h>
 #include <orbis/Sysmodule.h>
-#include <orbis/AudioOut.h>
 #include <orbis/CommonDialog.h>
-#include <orbis/Sysmodule.h>
 #include <orbis/SystemService.h>
 
-#include "cheats.h"
+#include "app.h"
 #include "util.h"
 #include "common.h"
 #include "orbisPad.h"
+#include "app_db.h"
+#include "icon_cache.h"
+#include "storage.h"
 
 //Menus
 #include "menu.h"
@@ -28,33 +28,21 @@
 #include "ttf_render.h"
 #include "font-16x32.h"
 
-//Sound
-#define DR_MP3_IMPLEMENTATION
-#include "dr_mp3.h"
-
-// Audio handle
-static int32_t audio = 0;
-
 
 #define load_menu_texture(name, type) \
-			if (!LoadMenuTexture(CHEATSMGR_APP_PATH "images/" #name "." #type , name##_##type##_index)) return 0;
+			if (!LoadMenuTexture(APP_ASSETS_PATH "images/" #name "." #type , name##_##type##_index)) return 0;
 
-app_config_t gcm_config = {
-    .app_name = "CHTMGR",
-    .app_ver = {0},
-    .music = 1,
-    .doSort = 1,
-    .doAni = 1,
-    .update = 1,
-    .overwrite = 1,
-    .user_id = 0,
-    .url_cheats = GOLDCHEATS_URL,
-    .url_patches = GOLDPATCH_URL,
-    .url_plugins = GOLDPLUGINS_UPDATE_URL,
+pm_app_t app = {
+	.model = NULL,
+	.installed = NULL,
+	.plugins = NULL,
+	.target_id = PM_TARGET_DEFAULT,
+	.target_name = "Global",
+	.dirty = false,
+	.read_only = false,
 };
 
 int close_app = 0;
-int idle_time = 0;                          // Set by readPad
 
 png_texture * menu_textures;                // png_texture array for main menu, initialized in LoadTexture
 SDL_Window* window;                         // SDL window
@@ -62,96 +50,17 @@ SDL_Renderer* renderer;                     // SDL software renderer
 uint32_t* texture_mem;                      // Pointers to texture memory
 uint32_t* free_mem;                         // Pointer after last texture
 
-/*
-* HDD cheats list
-*/
-game_list_t hdd_cheats = {
-	.icon_id = header_ico_cht_png_index,
-	.title = "HDD Cheats",
-    .list = NULL,
-    .path = GOLDCHEATS_DATA_PATH,
-    .ReadList = &ReadUserList,
-    .ReadCodes = &ReadCodes,
-    .UpdatePath = NULL,
-};
-
-/*
-* HDD patches list
-*/
-game_list_t hdd_patches = {
-    .icon_id = header_ico_cht_png_index,
-    .title = "Game Patches",
-    .list = NULL,
-    .path = GOLDCHEATS_PATCH_PATH "xml/",
-    .ReadList = &ReadPatchList,
-    .ReadCodes = &ReadPatches,
-    .UpdatePath = NULL,
-};
-
-/*
-* Online code list
-*/
-game_list_t online_cheats = {
-	.icon_id = header_ico_cht_png_index,
-	.title = "Online Cheats",
-    .list = NULL,
-    .path = ONLINE_URL,
-    .ReadList = &ReadOnlineList,
-    .ReadCodes = &ReadOnlineCodes,
-    .UpdatePath = NULL,
-};
-
-/*
-* Update cheat code list
-*/
-game_list_t update_cheats = {
-    .icon_id = header_ico_xmb_png_index,
-    .title = "Update Cheats, Patches & Plugins",
-    .list = NULL,
-    .path = "",
-    .ReadList = &ReadBackupList,
-    .ReadCodes = &ReadBackupCodes,
-    .UpdatePath = NULL,
-};
-
-static const char* get_button_prompts(int menu_id)
+static const char* get_button_prompts(int id)
 {
-	const char* prompt = NULL;
-
-	switch (menu_id)
+	switch (id)
 	{
-		case MENU_PATCH_VIEW:
-		case MENU_CREDITS:
-		case MENU_SAVE_DETAILS:
-			prompt = "\x13 Back";
-			break;
+		case MENU_PLUGINS:
+			return "\x10 Toggle    \x13 Save & Back";
 
-		case MENU_SETTINGS:
-		case MENU_CODE_OPTIONS:
-			prompt = "\x10 Select    \x13 Back";
-			break;
-
-		case MENU_UPDATE_CHEATS:
-			prompt = "\x10 Select    \x13 Back    \x11 Refresh";
-			break;
-
-		case MENU_HDD_CHEATS:
-		case MENU_HDD_PATCHES:
-		case MENU_ONLINE_DB:
-			prompt = "\x10 Select    \x13 Back    \x12 Filter    \x11 Refresh";
-			break;
-
-		case MENU_PATCHES:
-			prompt = "\x10 Select    \x12 View Code    \x13 Back";
-			break;
-
-		case MENU_MAIN_SCREEN:
+		case MENU_TARGETS:
 		default:
-			prompt = "";
-			break;
+			return "\x10 Select    \x13 Exit";
 	}
-
-	return prompt;
 }
 
 static int initPad(void)
@@ -166,152 +75,63 @@ static int initPad(void)
 		return 0;
 	}
 
-	// Get the user ID
-	gcm_config.user_id = orbisPadGetConf()->userId;
-
 	return 1;
 }
 
-// Used only in initialization. Allocates 64 mb for textures and loads the font
+// Used only in initialization. Allocates memory for textures and loads the fonts
 static int LoadTextures_Menu(void)
 {
 	texture_mem = malloc(256 * 32 * 32 * 4);
 	menu_textures = (png_texture *)calloc(TOTAL_MENU_TEXTURES, sizeof(png_texture));
-	
+
 	if(!texture_mem || !menu_textures)
 		return 0; // fail!
-	
+
 	ResetFont();
 	free_mem = (u32 *) AddFontFromBitmapArray((u8 *) console_font_16x32, (u8 *) texture_mem, 0, 0xFF, 16, 32, 1, BIT7_FIRST_PIXEL);
-	
+
 	if (TTFLoadFont(0, "/preinst/common/font/DFHEI5-SONY.ttf", NULL, 0) != SUCCESS ||
 		TTFLoadFont(1, "/system_ex/app/NPXS20113/bdjstack/lib/fonts/SCE-PS3-RD-R-LATIN.TTF", NULL, 0) != SUCCESS)
 		return 0;
 
 	free_mem = (u32*) init_ttf_table((u8*) free_mem);
 	set_ttf_window(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, WIN_SKIP_LF);
-	
-	//Init Main Menu textures
-	load_menu_texture(bgimg, png);
+
+	//Init Menu textures
 	load_menu_texture(bglist, png);
-	load_menu_texture(cheat, png);
 	load_menu_texture(pslogo, png);
-	load_menu_texture(leon_luna, jpg);
-	load_menu_texture(tag_shn, png);
-	load_menu_texture(tag_mc4, png);
-	load_menu_texture(tag_json, png);
-	load_menu_texture(tag_lock, png);
-	load_menu_texture(circle_error_dark, png);
-	load_menu_texture(circle_error_light, png);
-	load_menu_texture(circle_loading_bg, png);
-	load_menu_texture(circle_loading_seek, png);
-	load_menu_texture(edit_ico_add, png);
-	load_menu_texture(edit_ico_del, png);
-	load_menu_texture(edit_shadow, png);
 	load_menu_texture(footer_ico_circle, png);
 	load_menu_texture(footer_ico_cross, png);
-	load_menu_texture(footer_ico_lt, png);
-	load_menu_texture(footer_ico_rt, png);
-	load_menu_texture(footer_ico_square, png);
-	load_menu_texture(footer_ico_triangle, png);
-	load_menu_texture(header_dot, png);
-	load_menu_texture(header_ico_abt, png);
-	load_menu_texture(header_ico_cht, png);
 	load_menu_texture(header_ico_opt, png);
 	load_menu_texture(header_ico_xmb, png);
-	load_menu_texture(header_line, png);
 	load_menu_texture(help, png);
 	load_menu_texture(mark_arrow, png);
 	load_menu_texture(mark_line, png);
-	load_menu_texture(mark_line_nowork, png);
 	load_menu_texture(opt_off, png);
 	load_menu_texture(opt_on, png);
 	load_menu_texture(scroll_bg, png);
 	load_menu_texture(scroll_lock, png);
-	load_menu_texture(titlescr_ico_abt, png);
-	load_menu_texture(titlescr_ico_cht, png);
-	load_menu_texture(titlescr_ico_pat, png);
-	load_menu_texture(titlescr_ico_net, png);
 	load_menu_texture(titlescr_ico_opt, png);
-	load_menu_texture(titlescr_ico_xmb, png);
+	load_menu_texture(titlescr_ico_cht, png);
 	load_menu_texture(titlescr_logo, png);
-
-//	menu_textures[icon_png_file_index].texture = NULL;
 
 	u32 tBytes = free_mem - texture_mem;
 	LOG("LoadTextures_Menu() :: Allocated %db (%.02fkb, %.02fmb) for textures", tBytes, tBytes / (float)1024, tBytes / (float)(1024 * 1024));
 	return 1;
 }
 
-static int LoadSounds(void* data)
-{
-	uint8_t* play_audio = data;
-	int32_t sOffs = 0;
-	drmp3 wav;
-
-	// Decode a mp3 file to play
-	if (!drmp3_init_file(&wav, CHEATSMGR_APP_PATH "audio/background_music.mp3", NULL))
-	{
-		LOG("[ERROR] Failed to decode audio file");
-		return -1;
-	}
-
-	// Calculate the sample count and allocate a buffer for the sample data accordingly
-	size_t sampleCount = drmp3_get_pcm_frame_count(&wav) * wav.channels;
-	drmp3_int16 *pSampleData = (drmp3_int16 *)malloc(sampleCount * sizeof(uint16_t));
-
-	// Decode the wav into pSampleData  wav.totalPCMFrameCount
-	drmp3_read_pcm_frames_s16(&wav, drmp3_get_pcm_frame_count(&wav), pSampleData);
-
-	// Play the song in a loop
-	while (!close_app)
-	{
-		if (*play_audio == 0)
-		{
-			usleep(0x1000);
-			continue;
-		}
-
-		/* Output audio */
-		sceAudioOutOutput(audio, NULL);	// NULL: wait for completion
-
-		if (sceAudioOutOutput(audio, pSampleData + sOffs) < 0)
-		{
-			LOG("Failed to output audio");
-			return -1;
-		}
-
-		sOffs += 256 * 2;
-
-		if (sOffs >= sampleCount)
-			sOffs = 0;
-	}
-
-	free(pSampleData);
-	drmp3_uninit(&wav);
-
-	return 0;
-}
-
 static void registerSpecialChars(void)
 {
 	// Register button icons
 	RegisterSpecialCharacter(orbisPadGetConf()->crossButtonOK ? CHAR_BTN_X : CHAR_BTN_O, 0, 1.0, &menu_textures[footer_ico_cross_png_index]);
-	RegisterSpecialCharacter(CHAR_BTN_S, 0, 1.0, &menu_textures[footer_ico_square_png_index]);
-	RegisterSpecialCharacter(CHAR_BTN_T, 0, 1.0, &menu_textures[footer_ico_triangle_png_index]);
 	RegisterSpecialCharacter(orbisPadGetConf()->crossButtonOK ? CHAR_BTN_O : CHAR_BTN_X, 0, 1.0, &menu_textures[footer_ico_circle_png_index]);
-
-	RegisterSpecialCharacter(CHAR_TAG_MC4, 0, 1.0, &menu_textures[tag_mc4_png_index]);
-	RegisterSpecialCharacter(CHAR_TAG_SHN, 0, 1.0, &menu_textures[tag_shn_png_index]);
-	RegisterSpecialCharacter(CHAR_TAG_JSON, 0, 1.0, &menu_textures[tag_json_png_index]);
-	RegisterSpecialCharacter(CHAR_TAG_LOCKED, 0, 1.0, &menu_textures[tag_lock_png_index]);
 }
 
 static void helpFooter(int id)
 {
 	u8 alpha = 0xFF;
 
-	if (gcm_config.doAni && orbisPadGetConf()->idle > 0x100)
+	if (orbisPadGetConf()->idle > 0x100)
 	{
 		int dec = (orbisPadGetConf()->idle - 0x100) * 2;
 		alpha = (dec > alpha) ? 0 : (alpha - dec);
@@ -334,26 +154,66 @@ static void terminate(void)
 
 static int initInternal(void)
 {
-    // load common modules
-    int ret = sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_SYSTEM_SERVICE);
-    if (ret != SUCCESS) {
-        LOG("load module failed: SYSTEM_SERVICE (0x%08x)\n", ret);
-        return 0;
-    }
+	// load common modules
+	int ret = sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_SYSTEM_SERVICE);
+	if (ret != SUCCESS) {
+		LOG("load module failed: SYSTEM_SERVICE (0x%08x)\n", ret);
+		return 0;
+	}
 
-    ret = sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_USER_SERVICE);
-    if (ret != SUCCESS) {
-        LOG("load module failed: USER_SERVICE (0x%08x)\n", ret);
-        return 0;
-    }
+	ret = sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_USER_SERVICE);
+	if (ret != SUCCESS) {
+		LOG("load module failed: USER_SERVICE (0x%08x)\n", ret);
+		return 0;
+	}
 
-    ret = sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_SAVE_DATA);
-    if (ret != SUCCESS) {
-        LOG("load module failed: SAVE_DATA (0x%08x)\n", ret);
-        return 0;
-    }
+	return 1;
+}
 
-    return 1;
+// Loads plugin state, installed apps and the plugin directory listing
+static int pm_app_init(void)
+{
+	app.model = pm_model_new();
+	if (!app.model)
+		return 0;
+
+	if (storage_load_state(app.model) != 0)
+	{
+		app.read_only = true;
+		show_message("State could not be loaded; saving is disabled.");
+	}
+
+	app.installed = appdb_load_installed();
+	if (!app.installed)
+		return 0;
+	LOG("app.db: %d installed apps", (int)list_count(app.installed));
+
+	app.plugins = list_alloc();
+	if (!app.plugins)
+		return 0;
+	storage_list_prx(app.plugins);
+	LOG("plugins dir: %d .prx files", (int)list_count(app.plugins));
+
+	if (list_count(app.installed) == 0)
+		show_message("No installed games were found in app.db.\nOnly the Global section can be edited.");
+
+	icon_cache_init(menu_textures[titlescr_ico_cht_png_index].texture);
+	LOG("icon cache ready");
+
+	// Consume the button press that dismissed any dialog shown above
+	orbisPadUpdate();
+	return 1;
+}
+
+static void pm_app_free(void)
+{
+	icon_cache_free();
+	storage_free_prx(app.plugins);
+	appdb_free(app.installed);
+	pm_model_free(app.model);
+	app.plugins = NULL;
+	app.installed = NULL;
+	app.model = NULL;
 }
 
 
@@ -362,13 +222,16 @@ static int initInternal(void)
 */
 s32 main(s32 argc, const char* argv[])
 {
+	(void)argc;
+	(void)argv;
 #ifdef DEBUG_ENABLE_LOG
 	// Frame tracking info for debugging
 	uint32_t lastFrameTicks  = 0;
 	uint32_t startFrameTicks = 0;
 	uint32_t deltaFrameTicks = 0;
 
-	dbglogger_init();
+	dbglogger_init_str(DEBUG_LOG_DEST);
+	LOG("GoldHEN Plugin Manager " APP_VERSION " starting");
 #endif
 
 	// Initialize SDL functions
@@ -380,26 +243,21 @@ s32 main(s32 argc, const char* argv[])
 		return (-1);
 	}
 
-	initInternal();
-	http_init();
-	initPad();
+	LOG("SDL_Init OK");
 
-	// Initialize audio output library
-	if (sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_AUDIOOUT) < 0 ||
-		sceAudioOutInit() != SUCCESS)
+	if (!initInternal())
 	{
-		LOG("[ERROR] Failed to initialize audio output");
+		LOG("Failed to initialize system services!");
 		return (-1);
 	}
+	LOG("System services OK");
 
-	// Open a handle to audio output device
-	audio = sceAudioOutOpen(ORBIS_USER_SERVICE_USER_ID_SYSTEM, ORBIS_AUDIO_OUT_PORT_TYPE_MAIN, 0, 256, 48000, ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO);
-
-	if (audio <= 0)
+	if (!initPad())
 	{
-		LOG("[ERROR] Failed to open audio on main port");
-		return audio;
+		LOG("Failed to initialize the pad!");
+		return (-1);
 	}
+	LOG("Pad OK");
 
 	// Create a window context
 	LOG( "Creating a window");
@@ -420,10 +278,11 @@ s32 main(s32 argc, const char* argv[])
 	if (!initialize_jbc())
 		terminate();
 
-	mkdirs(GOLDCHEATS_DATA_PATH);
-	mkdirs(CHEATSMGR_LOCAL_CACHE);
-	mkdirs(GOLDCHEATS_PATCH_PATH "settings/");
-	
+	// register exit callback right away so every early return drops root creds
+	atexit(terminate);
+
+	mkdirs(GOLDHEN_PLUGINS_DIR);
+
 	// Load freetype
 	if (sceSysmoduleLoadModule(ORBIS_SYSMODULE_FREETYPE_OL) < 0)
 	{
@@ -432,8 +291,7 @@ s32 main(s32 argc, const char* argv[])
 	}
 
 	// Load MsgDialog
-	if (sceSysmoduleLoadModule(ORBIS_SYSMODULE_MESSAGE_DIALOG) < 0 ||
-		sceSysmoduleLoadModule(ORBIS_SYSMODULE_IME_DIALOG) < 0)
+	if (sceSysmoduleLoadModule(ORBIS_SYSMODULE_MESSAGE_DIALOG) < 0)
 	{
 		LOG("Failed to load dialog!");
 		return (-1);
@@ -446,9 +304,6 @@ s32 main(s32 argc, const char* argv[])
 		return (-1);
 	}
 
-	// register exit callback
-	atexit(terminate);
-	
 	// Load texture
 	if (!LoadTextures_Menu())
 	{
@@ -461,51 +316,39 @@ s32 main(s32 argc, const char* argv[])
 	drawSplashLogo(1);
 #endif
 
-	// Load application settings
-	load_app_settings(&gcm_config);
-
-	// Unpack application data on first run
-	if (strncmp(gcm_config.app_ver, CHEATSMGR_VERSION, sizeof(gcm_config.app_ver)) != 0)
-	{
-		if (gcm_config.overwrite && extract_zip(CHEATSMGR_APP_PATH "misc/" LOCAL_TEMP_ZIP, GOLDHEN_PATH "/"))
-		{
-			char *cheat_ver = readTextFile(GOLDCHEATS_DATA_PATH "misc/cheat_ver.txt", NULL);
-			char *patch_ver = readTextFile(GOLDCHEATS_PATCH_PATH "misc/patch_ver.txt", NULL);
-			show_message("Successfully installed local application data:\n\n- %s- %s", cheat_ver, patch_ver);
-			free(cheat_ver);
-			free(patch_ver);
-		}
-
-		strncpy(gcm_config.app_ver, CHEATSMGR_VERSION, sizeof(gcm_config.app_ver));
-		save_app_settings(&gcm_config);
-	}
-
 	// Setup font
 	SetExtraSpace(-1);
 	SetCurrentFont(font_console_regular);
-
 	registerSpecialChars();
-	initMenuOptions();
+
+	if (!pm_app_init())
+	{
+		LOG("Failed to initialize application state!");
+		return (-1);
+	}
+
 #ifndef DEBUG_ENABLE_LOG
 	// Splash screen logo (fade-out)
 	drawSplashLogo(-1);
 #endif
 	SDL_DestroyTexture(menu_textures[pslogo_png_index].texture);
-	
-	//Set options
-	update_callback(!gcm_config.update);
+	menu_textures[pslogo_png_index].texture = NULL;
 
-	SDL_CreateThread(&LoadSounds, "audio_thread", &gcm_config.music);
-#ifndef DEBUG_ENABLE_LOG
-	Draw_MainMenu_Ani();
-#endif
+	LOG("Entering targets menu");
+	SetMenu(MENU_TARGETS);
+	LOG("Main loop start");
 
 	while (!close_app)
 	{
 #ifdef DEBUG_ENABLE_LOG
-        startFrameTicks = SDL_GetTicks();
-        deltaFrameTicks = startFrameTicks - lastFrameTicks;
-        lastFrameTicks  = startFrameTicks;
+		static int frame_no = 0;
+		if (frame_no < 3)
+			LOG("frame %d begin", frame_no);
+#endif
+#ifdef DEBUG_ENABLE_LOG
+		startFrameTicks = SDL_GetTicks();
+		deltaFrameTicks = startFrameTicks - lastFrameTicks;
+		lastFrameTicks  = startFrameTicks;
 #endif
 		// Clear the canvas
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
@@ -514,28 +357,32 @@ s32 main(s32 argc, const char* argv[])
 		drawScene();
 
 		// Draw help
-		helpFooter((last_menu_id[menu_id] == MENU_UPDATE_CHEATS) ? MENU_CODE_OPTIONS : menu_id);
+		helpFooter(menu_id);
 
 #ifdef DEBUG_ENABLE_LOG
 		// Calculate FPS and ms/frame
 		SetFontColor(APP_FONT_COLOR | 0xFF, 0);
-		DrawFormatString(50, 960, "FPS: %d", (1000 / deltaFrameTicks));
+		DrawFormatString(50, 960, "FPS: %d", (deltaFrameTicks ? 1000 / deltaFrameTicks : 0));
 #endif
 		// Propagate the updated window to the screen
 		SDL_RenderPresent(renderer);
+#ifdef DEBUG_ENABLE_LOG
+		if (frame_no < 3)
+			LOG("frame %d end", frame_no);
+		frame_no++;
+#endif
 	}
 
 #ifndef DEBUG_ENABLE_LOG
-	if (gcm_config.doAni)
-		drawEndLogo();
+	drawEndLogo();
 #endif
 
-    // Cleanup resources
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    // Stop all SDL sub-systems
-    SDL_Quit();
-	http_end();
+	// Cleanup resources
+	pm_app_free();
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	// Stop all SDL sub-systems
+	SDL_Quit();
 	orbisPadFinish();
 	return 0;
 }

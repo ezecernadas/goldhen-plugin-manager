@@ -6,7 +6,6 @@
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <zlib.h>
 
 #include "types.h"
 #include "common.h"
@@ -121,7 +120,11 @@ int copy_file(const char* input, const char* output)
     char* buffer = malloc(TMP_BUFF_SIZE);
 
     if (!buffer)
+    {
+        fclose(fd);
+        fclose(fd2);
         return FAILED;
+    }
 
     do
     {
@@ -138,82 +141,48 @@ int copy_file(const char* input, const char* output)
     return (read - written);
 }
 
-uint32_t file_crc32(const char* input)
+void utf8_truncate(char* s, size_t max_bytes)
 {
-    char buffer[TMP_BUFF_SIZE];
-    uLong crc = crc32(0L, Z_NULL, 0);
-    size_t read;
+	size_t len, cut, lead, expected;
+	unsigned char c;
 
-    FILE* in = fopen(input, "rb");
-    
-    if (!in)
-        return FAILED;
+	if (!s)
+		return;
 
-    do
-    {
-        read = fread(buffer, 1, TMP_BUFF_SIZE, in);
-        crc = crc32(crc, (u8*)buffer, read);
-    }
-    while (read == TMP_BUFF_SIZE);
+	len = strlen(s);
+	cut = (len < max_bytes) ? len : max_bytes;
 
-    fclose(in);
+	// Walk back over continuation bytes (10xxxxxx) to find the lead byte of
+	// the code point that contains position cut-1.
+	lead = cut;
+	while (lead > 0 && ((unsigned char)s[lead - 1] & 0xC0) == 0x80 && cut - lead < 3)
+		lead--;
 
-    return crc;
-}
-
-int copy_directory(const char* startdir, const char* inputdir, const char* outputdir)
-{
-	char fullname[256];
-    char out_name[256];
-	struct dirent *dirp;
-	int len = strlen(startdir);
-	DIR *dp = opendir(inputdir);
-
-	if (!dp) {
-		return FAILED;
-	}
-
-	while ((dirp = readdir(dp)) != NULL) {
-		if ((strcmp(dirp->d_name, ".")  != 0) && (strcmp(dirp->d_name, "..") != 0)) {
-  			snprintf(fullname, sizeof(fullname), "%s%s", inputdir, dirp->d_name);
-
-  			if (dirp->d_type == DT_DIR) {
-                strcat(fullname, "/");
-    			copy_directory(startdir, fullname, outputdir);
-  			} else {
-  			    snprintf(out_name, sizeof(out_name), "%s%s", outputdir, &fullname[len]);
-    			if (copy_file(fullname, out_name) != SUCCESS) {
-     				return FAILED;
-    			}
-  			}
-		}
-	}
-	closedir(dp);
-
-    return SUCCESS;
-}
-
-int clean_directory(const char* inputdir)
-{
-	DIR *d;
-	struct dirent *dir;
-	char dataPath[256];
-
-	d = opendir(inputdir);
-	if (!d)
-		return FAILED;
-
-	while ((dir = readdir(d)) != NULL)
+	if (lead == 0 || ((unsigned char)s[lead - 1] & 0xC0) == 0x80)
 	{
-		if (strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0)
-		{
-			snprintf(dataPath, sizeof(dataPath), "%s%s", inputdir, dir->d_name);
-			unlink_secure(dataPath);
-		}
+		// No lead byte: a stray continuation run, drop it entirely.
+		s[lead] = '\0';
+		return;
 	}
-	closedir(d);
 
-    return SUCCESS;
+	lead--;
+	c = (unsigned char)s[lead];
+	if (c < 0x80)
+		expected = 1;
+	else if ((c & 0xE0) == 0xC0)
+		expected = 2;
+	else if ((c & 0xF0) == 0xE0)
+		expected = 3;
+	else if ((c & 0xF8) == 0xF0)
+		expected = 4;
+	else
+		expected = 1;
+
+	// Drop the last code point when it would be cut in half.
+	if (lead + expected > cut)
+		cut = lead;
+
+	s[cut] = '\0';
 }
 
 int set_perms_directory(const char* inputdir, int mode)

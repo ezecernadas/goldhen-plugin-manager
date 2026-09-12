@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <zlib.h>
 
 #include "types.h"
 #include "libfont.h"

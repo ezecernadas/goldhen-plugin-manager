@@ -1,78 +1,46 @@
-#ifndef __ARTEMIS_MENU_H__
-#define __ARTEMIS_MENU_H__
+#ifndef __PLGM_MENU_H__
+#define __PLGM_MENU_H__
 
 #include <SDL2/SDL.h>
 
 #include "types.h"
-#include "settings.h"
+#include "structs.h"
 
 // SDL window and software renderer
 extern SDL_Window* window;
 extern SDL_Renderer* renderer;
 
+#define MENU_TITLE_OFF             45          // Offset of menu title text from menu mini icon
+#define MENU_ICON_OFF              105         // X Offset to start printing menu mini icon
+#define MENU_ANI_MAX               0x80        // Max animation number
+#define OPTION_ITEM_OFF            1595        // Offset from left of settings item/value
+
 enum menu_screen_ids
 {
-	MENU_MAIN_SCREEN,		/* 0 - Main Menu */
-	MENU_UPDATE_CHEATS,		/* 1 - Update Menu (User List) */
-	MENU_HDD_CHEATS,		/* 2 - HDD Menu (User List) */
-	MENU_HDD_PATCHES,		/* 3 - Patch Menu (User List) */
-	MENU_ONLINE_DB,			/* 4 - Online Menu (Online List) */
-	MENU_SETTINGS,			/* 5 - Options Menu */
-	MENU_CREDITS,			/* 6 - About Menu */
-	MENU_PATCHES,			/* 7 - Code Menu (Select Cheats) */
-	MENU_PATCH_VIEW,		/* 8 - Code Menu (View Cheat) */
-	MENU_CODE_OPTIONS,		/* 9 - Code Menu (View Cheat Options) */
-	MENU_SAVE_DETAILS,
+	MENU_TARGETS,		/* 0 - Global + installed games */
+	MENU_PLUGINS,		/* 1 - Plugin checkboxes for the selected target */
 	TOTAL_MENU_IDS
 };
 
 //Textures
 enum texture_index
 {
-//Artemis assets
-	leon_luna_jpg_index,
-	bgimg_png_index,
 	bglist_png_index,
-	cheat_png_index,
 	pslogo_png_index,
-	circle_error_dark_png_index,
-	circle_error_light_png_index,
-	circle_loading_bg_png_index,
-	circle_loading_seek_png_index,
-	edit_ico_add_png_index,
-	edit_ico_del_png_index,
-	edit_shadow_png_index,
 	footer_ico_circle_png_index,
 	footer_ico_cross_png_index,
-	footer_ico_lt_png_index,
-	footer_ico_rt_png_index,
-	footer_ico_square_png_index,
-	footer_ico_triangle_png_index,
-	header_dot_png_index,
-	header_ico_abt_png_index,
-	header_ico_cht_png_index,
 	header_ico_opt_png_index,
 	header_ico_xmb_png_index,
-	header_line_png_index,
 	help_png_index,
 	mark_arrow_png_index,
 	mark_line_png_index,
-	mark_line_nowork_png_index,
 	opt_off_png_index,
 	opt_on_png_index,
 	scroll_bg_png_index,
 	scroll_lock_png_index,
-	titlescr_ico_xmb_png_index,
-	titlescr_ico_cht_png_index,
-	titlescr_ico_pat_png_index,
-	titlescr_ico_net_png_index,
 	titlescr_ico_opt_png_index,
-	titlescr_ico_abt_png_index,
+	titlescr_ico_cht_png_index,
 	titlescr_logo_png_index,
-	tag_shn_png_index,
-	tag_mc4_png_index,
-	tag_json_png_index,
-	tag_lock_png_index,
 
 	TOTAL_MENU_TEXTURES
 };
@@ -86,17 +54,14 @@ enum texture_index
 #define  font_console_regular				0
 
 #define APP_FONT_COLOR						0xFFFFFF00
-#define APP_FONT_TAG_COLOR					0xFFFFFF00
 #define APP_FONT_MENU_COLOR					0x00000000
 #define APP_FONT_TITLE_COLOR				0x00000000
+#define APP_FONT_HINT_COLOR					0xC0C0C000
 #define APP_FONT_SIZE_TITLE					84, 72
 #define APP_FONT_SIZE_SUBTITLE				68, 60
 #define APP_FONT_SIZE_SUBTEXT				36, 36
-#define APP_FONT_SIZE_ABOUT					56, 50
 #define APP_FONT_SIZE_SELECTION				56, 48
 #define APP_FONT_SIZE_DESCRIPTION			54, 48
-#define APP_FONT_SIZE_MENU					56, 54
-#define APP_FONT_SIZE_JARS					32, 64
 #define APP_LINE_OFFSET						40
 
 #define SCREEN_WIDTH						1920
@@ -122,40 +87,37 @@ extern u32 * free_mem;         // Pointer after last texture
 
 extern png_texture * menu_textures;				// png_texture array for main menu, initialized in LoadTexture
 
-extern int highlight_alpha;						// Alpha of the selected
-extern int idle_time;							// Set by readPad
-
+extern int close_app;
 extern int menu_id;
 extern int menu_sel;
-extern int menu_old_sel[]; 
-extern int last_menu_id[];
+extern int menu_old_sel[];
 
-extern struct game_entry * selected_entry;
-extern struct code_entry * selected_centry;
-extern int option_index;
-
+// draw.c
 void DrawBackground2D(u32 rgba);
 void DrawTexture(png_texture* tex, int x, int y, int z, int w, int h, u32 rgba);
 void DrawTextureCentered(png_texture* tex, int x, int y, int z, int w, int h, u32 rgba);
 void DrawTextureCenteredX(png_texture* tex, int x, int y, int z, int w, int h, u32 rgba);
 void DrawTextureCenteredY(png_texture* tex, int x, int y, int z, int w, int h, u32 rgba);
+void DrawRawTexture(SDL_Texture* tex, int x, int y, int w, int h, u8 alpha);
 void DrawHeader(int icon, int xOff, const char * headerTitle, const char * headerSubTitle, u32 rgba, u32 bgrgba, int mode);
 void DrawHeader_Ani(int icon, const char * headerTitle, const char * headerSubTitle, u32 rgba, u32 bgrgba, int ani, int div);
 void DrawBackgroundTexture(int x, int id, u8 alpha);
-void DrawTextureRotated(png_texture* tex, int x, int y, int z, int w, int h, u32 rgba, float angle);
-void Draw_MainMenu();
-void Draw_MainMenu_Ani();
 int LoadMenuTexture(const char* path, int idx);
-
-void drawScene();
+SDL_Texture* LoadTextureFromFile(const char* path);
 void drawSplashLogo(int m);
-void drawEndLogo();
+void drawEndLogo(void);
 
-int load_app_settings(app_config_t* config);
-int save_app_settings(app_config_t* config);
+// menu.c
+void SetMenu(int id);
+void drawScene(void);
+void move_selection_back(int count, int steps);
+void move_selection_fwd(int count, int steps);
+void DrawScrollBar(int selIndex, int max, int maxPerPage, int xOff, u8 alpha);
+u8 CalculateAlphaList(int curIndex, int selIndex, int max);
+void DrawSelectionMark(int y, int y_inc, int arrow_x, u8 alpha);
 
-int initialize_jbc();
-void terminate_jbc();
-void initMenuOptions();
+// orbis_jbc.c
+int initialize_jbc(void);
+void terminate_jbc(void);
 
 #endif
