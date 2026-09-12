@@ -158,6 +158,7 @@ static void terminate(void)
 	LOG("Exiting...");
 
 	terminate_jbc();
+	LOG("Shutdown: LoadExec(exit)");
 	sceSystemServiceLoadExec("exit", NULL);
 }
 
@@ -395,11 +396,17 @@ s32 main(s32 argc, const char* argv[])
 #endif
 
 	// Cleanup resources
+	LOG("Shutdown: freeing app state");
 	pm_app_free();
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	// Stop all SDL sub-systems
-	SDL_Quit();
+	LOG("Shutdown: pad finish");
 	orbisPadFinish();
+
+	/* SDL_DestroyRenderer() of the SDL-PS4 fork crashes (CE-34878-0) on the
+	 * console during GLES teardown, even when no texture was destroyed by
+	 * hand (verified with on-console logs). The process is replaced by
+	 * sceSystemServiceLoadExec("exit") from terminate() right after main()
+	 * returns, so the renderer, window and Piglet context are reclaimed by
+	 * the system; skip SDL_DestroyRenderer/SDL_DestroyWindow/SDL_Quit. */
+	LOG("Shutdown: main returns");
 	return 0;
 }
