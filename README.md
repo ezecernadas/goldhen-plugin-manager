@@ -15,7 +15,7 @@ It does one thing only: toggle plugins on and off. No cheats, no downloads, no u
    Square opens the Gamepad Helper screen.
 3. **Gamepad Helper** — edits the `gamepad.ini` section of the selected target (`[default]` for
    Global): dead zones, touchpad buttons, button remapping and vibration intensity. Left/Right
-   change a value (L1/R1 step the dead zones by 10), Cross cycles the on/off rows (default, on, off) and steps every other row forward; L1/R1 move the dead-zone values by 10, Circle saves
+   change a value (L1/R1 step the dead zones by 10), Cross cycles the on/off rows (default, on, off) and steps every other row forward, Circle saves
    and goes back. The value `default` means the key is absent from the file, so the plugin uses
    its own default.
 
