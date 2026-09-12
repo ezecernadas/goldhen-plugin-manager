@@ -57,12 +57,15 @@ static const char* get_button_prompts(int id)
 	switch (id)
 	{
 		case MENU_PLUGINS:
-			return plugins_cursor_is_gamepad_helper()
+			return (plugins_cursor_config_menu() >= 0)
 				? "\x10 Toggle    \x11 Configure    \x13 Save & Back"
 				: "\x10 Toggle    \x13 Save & Back";
 
 		case MENU_GAMEPAD:
 			return "\x10 Change    \x13 Save & Back";
+
+		case MENU_LANGUAGE:
+			return "\x10 Select    \x13 Back";
 
 		case MENU_TARGETS:
 		default:

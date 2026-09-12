@@ -89,6 +89,15 @@ pm_plugin_t *pm_target_find_plugin(const pm_target_t *t, const char *path);
 int         pm_model_set_enabled(pm_model_t *m, const char *target_id, const char *path, bool enabled);
 bool        pm_model_is_enabled(const pm_model_t *m, const char *target_id, const char *path);
 
+/* Arguments of a plugin in a target (the text after ';'), or NULL when the
+ * target, the plugin or the arguments are absent. */
+const char *pm_model_get_args(const pm_model_t *m, const char *target_id, const char *path);
+
+/* Sets the arguments of a plugin in a target. NULL or "" clears them. Creates
+ * the target and a DISABLED plugin entry when missing; never changes the
+ * enabled flag. Returns 0, or -1 on allocation failure. */
+int         pm_model_set_args(pm_model_t *m, const char *target_id, const char *path, const char *args);
+
 /* Deep equality: same targets in the same order, same plugins in the same
  * order, same args and enabled flags. */
 bool        pm_model_equal(const pm_model_t *a, const pm_model_t *b);

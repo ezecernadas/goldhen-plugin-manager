@@ -22,7 +22,7 @@ void SetMenu(int id)
 			break;
 
 		case MENU_PLUGINS:
-			/* keep the cursor when coming back from the gamepad screen */
+			/* keep the cursor when coming back from a plugin config screen */
 			if (menu_id == MENU_TARGETS)
 				menu_old_sel[MENU_PLUGINS] = 0;
 			Draw_PluginsMenu_Ani();
@@ -31,6 +31,11 @@ void SetMenu(int id)
 		case MENU_GAMEPAD:
 			menu_old_sel[MENU_GAMEPAD] = 0;
 			Draw_GamepadMenu_Ani();
+			break;
+
+		case MENU_LANGUAGE:
+			menu_old_sel[MENU_LANGUAGE] = language_menu_initial_row();
+			Draw_LanguageMenu_Ani();
 			break;
 	}
 
@@ -110,6 +115,10 @@ void drawScene(void)
 
 		case MENU_GAMEPAD:
 			doGamepadMenu();
+			break;
+
+		case MENU_LANGUAGE:
+			doLanguageMenu();
 			break;
 	}
 }

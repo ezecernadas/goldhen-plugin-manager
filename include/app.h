@@ -34,6 +34,7 @@
 #define GAMEPAD_INI_TMP             GOLDHEN_PATH "/gamepad.ini.tmp"
 #define GAMEPAD_INI_BAK             GOLDHEN_PATH "/gamepad.ini.bak"
 #define GAMEPAD_HELPER_PRX          "gamepad_helper.prx"
+#define SYSTEM_LANGUAGE_PRX         "system_language_override.prx"
 
 #define APPDB_PATH                  "/system_data/priv/mms/app.db"
 #define APPMETA_ICON_FMT            "/user/appmeta/%s/icon0.png"

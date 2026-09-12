@@ -20,6 +20,7 @@ enum menu_screen_ids
 	MENU_TARGETS,		/* 0 - Global + installed games */
 	MENU_PLUGINS,		/* 1 - Plugin checkboxes for the selected target */
 	MENU_GAMEPAD,		/* 2 - Gamepad Helper settings for the selected target */
+	MENU_LANGUAGE,		/* 3 - System language override for the selected target */
 	TOTAL_MENU_IDS
 };
 

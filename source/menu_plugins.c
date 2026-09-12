@@ -24,17 +24,42 @@ static const char* plugin_at(int index)
 	return list_get_item(app.plugins, index);
 }
 
-static bool is_gamepad_helper(const char* path)
+/* Plugins that have a configuration screen, keyed by basename. */
+static const struct
+{
+	const char* basename;
+	int menu_id;
+} CONFIG_SCREENS[] = {
+	{ GAMEPAD_HELPER_PRX,  MENU_GAMEPAD },
+	{ SYSTEM_LANGUAGE_PRX, MENU_LANGUAGE },
+};
+
+static int config_menu_for(const char* path)
 {
 	const char* base = path ? strrchr(path, '/') : NULL;
+	size_t i;
 
 	base = base ? base + 1 : path;
-	return base && strcasecmp(base, GAMEPAD_HELPER_PRX) == 0;
+	if (!base)
+		return -1;
+
+	for (i = 0; i < sizeof(CONFIG_SCREENS) / sizeof(CONFIG_SCREENS[0]); i++)
+		if (strcasecmp(base, CONFIG_SCREENS[i].basename) == 0)
+			return CONFIG_SCREENS[i].menu_id;
+
+	return -1;
 }
 
-bool plugins_cursor_is_gamepad_helper(void)
+int plugins_cursor_config_menu(void)
 {
-	return is_gamepad_helper(plugin_at(menu_sel));
+	return config_menu_for(plugin_at(menu_sel));
+}
+
+/* Full path of the plugin under the cursor, so a config screen edits the
+ * exact entry the user selected (the on-disk name may differ in case). */
+const char* plugins_cursor_path(void)
+{
+	return plugin_at(menu_sel);
 }
 
 static void draw_row(int index, int y, u8 alpha)
@@ -209,10 +234,15 @@ void doPluginsMenu(void)
 	else if (orbisPadGetButtonPressed(ORBIS_PAD_BUTTON_CROSS))
 		toggle_selected();
 
-	else if (orbisPadGetButtonPressed(ORBIS_PAD_BUTTON_SQUARE) && plugins_cursor_is_gamepad_helper())
+	else if (orbisPadGetButtonPressed(ORBIS_PAD_BUTTON_SQUARE))
 	{
-		SetMenu(MENU_GAMEPAD);
-		return;
+		int config_menu = plugins_cursor_config_menu();
+
+		if (config_menu >= 0)
+		{
+			SetMenu(config_menu);
+			return;
+		}
 	}
 
 	else if (orbisPadGetButtonPressed(ORBIS_PAD_BUTTON_CIRCLE))

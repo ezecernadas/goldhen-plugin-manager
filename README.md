@@ -11,13 +11,19 @@ It does one thing only: toggle plugins on and off. No cheats, no downloads, no u
 1. **Targets** — the fixed **Global** entry (the `[default]` section) followed by every installed
    game/app with its icon and name. D-pad to move, Cross to open, Circle to exit.
 2. **Plugins** — one checkbox per `.prx` found in `/data/GoldHEN/plugins/`. Cross toggles a
-   plugin for the selected target; Circle saves and goes back. On the `gamepad_helper.prx` row,
-   Square opens the Gamepad Helper screen.
+   plugin for the selected target; Circle saves and goes back. On the `gamepad_helper.prx` and
+   `system_language_override.prx` rows, Square opens the matching configuration screen.
 3. **Gamepad Helper** — edits the `gamepad.ini` section of the selected target (`[default]` for
    Global): dead zones, touchpad buttons, button remapping and vibration intensity. Left/Right
    change a value (L1/R1 step the dead zones by 10), Cross cycles the on/off rows (default, on, off) and steps every other row forward, Circle saves
    and goes back. The value `default` means the key is absent from the file, so the plugin uses
    its own default.
+4. **System Language** — picks the language code passed to `system_language_override.prx` for
+   the selected target (the `; code` argument on its `plugins.ini` line). The list of 31 codes
+   comes from the plugin's README; "Default (no override)" removes the argument. Cross selects
+   and returns to the plugin list, Circle goes back unchanged. The choice is saved when leaving
+   the plugin list, and only takes effect if the plugin is enabled for that target. The plugin
+   is incompatible with `button_swap.prx`.
 
 GoldHEN reads `plugins.ini` when a game process is launched, so changes apply the next time
 the game is (re)launched.

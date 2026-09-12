@@ -484,6 +484,81 @@ static void test_model_clear(void)
     pm_model_free(ref);
 }
 
+static void test_plugin_args_get_set(void)
+{
+    pm_model_t *m = pm_model_new();
+    pm_model_t *back;
+    pm_plugin_t *p;
+    char *out;
+    char *json;
+    const char *path = "/data/GoldHEN/plugins/system_language_override.prx";
+
+    CHECK(pm_ini_parse(m, "[default]\n/data/GoldHEN/plugins/afr.prx\n") == 0);
+
+    /* absent target / plugin / args */
+    CHECK(pm_model_get_args(m, "CUSA00001", path) == NULL);
+    CHECK(pm_model_get_args(m, "default", path) == NULL);
+    CHECK(pm_model_get_args(m, "default", "/data/GoldHEN/plugins/afr.prx") == NULL);
+
+    /* set on a missing plugin creates a DISABLED entry with the args */
+    CHECK(pm_model_set_args(m, "CUSA00001", path, "es_ES") == 0);
+    CHECK_STR_EQ(pm_model_get_args(m, "CUSA00001", path), "es_ES");
+    CHECK(pm_model_is_enabled(m, "CUSA00001", path) == false);
+    p = pm_target_find_plugin(pm_model_find_target(m, "CUSA00001"), path);
+    CHECK(p != NULL && p->enabled == false);
+    out = pm_ini_serialize(m);
+    CHECK(out != NULL && strstr(out, "system_language_override") == NULL);
+    CHECK(out != NULL && strstr(out, "[CUSA00001]\n") != NULL);
+    free(out);
+
+    /* the JSON sidecar keeps the args of the disabled entry */
+    json = pm_json_serialize(m);
+    back = pm_model_new();
+    CHECK(pm_json_parse(back, json) == 0);
+    CHECK_STR_EQ(pm_model_get_args(back, "CUSA00001", path), "es_ES");
+    CHECK(pm_model_equal(m, back));
+    pm_model_free(back);
+    free(json);
+
+    /* set on an enabled plugin changes the emitted line */
+    CHECK(pm_model_set_enabled(m, "CUSA00001", path, true) == 0);
+    CHECK(pm_model_set_args(m, "CUSA00001", path, "pt_BR") == 0);
+    CHECK(pm_model_is_enabled(m, "CUSA00001", path) == true);
+    out = pm_ini_serialize(m);
+    CHECK(out != NULL && strstr(out, "/data/GoldHEN/plugins/system_language_override.prx ; pt_BR\n") != NULL);
+    free(out);
+
+    /* NULL clears, keeps enabled */
+    CHECK(pm_model_set_args(m, "CUSA00001", path, NULL) == 0);
+    CHECK(pm_model_get_args(m, "CUSA00001", path) == NULL);
+    p = pm_target_find_plugin(pm_model_find_target(m, "CUSA00001"), path);
+    CHECK(p != NULL && p->args == NULL && p->enabled == true);
+    out = pm_ini_serialize(m);
+    CHECK(out != NULL && strstr(out, "/data/GoldHEN/plugins/system_language_override.prx\n") != NULL);
+    CHECK(out != NULL && strstr(out, ";") == NULL);
+    free(out);
+
+    /* "" clears too */
+    CHECK(pm_model_set_args(m, "CUSA00001", path, "ja") == 0);
+    CHECK(pm_model_set_args(m, "CUSA00001", path, "") == 0);
+    CHECK(pm_model_get_args(m, "CUSA00001", path) == NULL);
+    CHECK(pm_model_is_enabled(m, "CUSA00001", path) == true);
+
+    /* path normalization applies to both get and set */
+    CHECK(pm_model_set_args(m, "CUSA00001", "/data/GoldHEN//plugins/system_language_override.prx", "uk") == 0);
+    CHECK_STR_EQ(pm_model_get_args(m, "CUSA00001", path), "uk");
+    CHECK_STR_EQ(pm_model_get_args(m, "CUSA00001", "/data//GoldHEN/plugins//system_language_override.prx"), "uk");
+    CHECK(pm_model_find_target(m, "CUSA00001")->count == 1);
+
+    /* set on an existing target that lacks the plugin: created disabled */
+    CHECK(pm_model_set_args(m, "default", path, "de") == 0);
+    CHECK(pm_model_is_enabled(m, "default", path) == false);
+    CHECK_STR_EQ(pm_model_get_args(m, "default", path), "de");
+    CHECK(pm_model_is_enabled(m, "default", "/data/GoldHEN/plugins/afr.prx") == true);
+
+    pm_model_free(m);
+}
+
 int main(void)
 {
     RUN(test_empty_and_null);
@@ -501,6 +576,7 @@ int main(void)
     RUN(test_malformed_header_lenient);
     RUN(test_bom_and_path_normalization);
     RUN(test_model_clear);
+    RUN(test_plugin_args_get_set);
 
     printf("%d passed, %d failed\n", g_passed, g_failed);
     return g_failed == 0 ? 0 : 1;

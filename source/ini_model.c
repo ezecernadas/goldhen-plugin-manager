@@ -299,6 +299,42 @@ bool pm_model_is_enabled(const pm_model_t *m, const char *target_id, const char 
     return p ? p->enabled : false;
 }
 
+const char *pm_model_get_args(const pm_model_t *m, const char *target_id, const char *path)
+{
+    const pm_plugin_t *p = pm_target_find_plugin(pm_model_find_target(m, target_id), path);
+    return p ? p->args : NULL;
+}
+
+int pm_model_set_args(pm_model_t *m, const char *target_id, const char *path, const char *args)
+{
+    pm_target_t *t;
+    pm_plugin_t *p;
+    char *copy = NULL;
+
+    if (!m || !target_id || !path)
+        return -1;
+    if (args && args[0] == '\0')
+        args = NULL;
+
+    t = pm_model_ensure_target(m, target_id);
+    if (!t)
+        return -1;
+    p = pm_target_find_plugin(t, path);
+    if (!p) {
+        p = target_add_plugin_(t, path, strlen(path), args, args ? strlen(args) : 0);
+        return p ? 0 : -1;
+    }
+
+    if (args) {
+        copy = pm_strdup_(args);
+        if (!copy)
+            return -1;
+    }
+    free(p->args);
+    p->args = copy;
+    return 0;
+}
+
 static bool str_eq_nullable_(const char *a, const char *b)
 {
     if (!a || !b)
