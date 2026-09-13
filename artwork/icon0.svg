@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<rect width="512" height="512" fill="#002887"/>
+<g transform="translate(256 256) scale(0.86) translate(-256 -256) rotate(-7 256 300)">
+<ellipse cx="262" cy="440" rx="212" ry="26" fill="#001a5c"/>
+<g transform="translate(246 232)">
+  <path d="M0 0 H61.0 a24 24 0 1 0 48 0 H170 V61.0 a24 24 0 1 1 0 48 V170 H109.0 H61.0 H0 V109.0 a24 24 0 1 0 0 -48 Z" transform="translate(8 18)" fill="#1a8a9c" stroke="#141b4d" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M0 0 H61.0 a24 24 0 1 0 48 0 H170 V61.0 a24 24 0 1 1 0 48 V170 H109.0 H61.0 H0 V109.0 a24 24 0 1 0 0 -48 Z" fill="#2fbfd0" stroke="#141b4d" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+  <g transform="translate(6 6)" fill="none" stroke="#0e7f8c" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M42 71 l14 -28 14 28 z"/>
+    <circle cx="114" cy="56" r="15"/>
+    <path d="M42 100 l28 28 M70 100 l-28 28"/>
+    <rect x="100" y="100" width="28" height="28" rx="4"/>
+  </g>
+</g>
+<g transform="translate(76 232)">
+  <path d="M0 0 H61.0 H109.0 H170 V61.0 a24 24 0 1 1 0 48 V170 H109.0 H61.0 H0 V109.0 V61.0 Z" transform="translate(8 18)" fill="#c9741f" stroke="#141b4d" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M0 0 H61.0 H109.0 H170 V61.0 a24 24 0 1 1 0 48 V170 H109.0 H61.0 H0 V109.0 V61.0 Z" fill="#f5b731" stroke="#141b4d" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="34" y="66" width="104" height="46" rx="23" fill="#2fbfd0" stroke="#141b4d" stroke-width="10"/>
+  <circle cx="115" cy="89" r="17" fill="#ffffff" stroke="#141b4d" stroke-width="8"/>
+  <rect x="0" y="0" width="0" height="0"/>
+</g>
+<g transform="translate(286 30) rotate(22) scale(0.72)">
+  <path d="M0 0 H61.0 H109.0 H170 V61.0 V109.0 V170 H109.0 a24 24 0 1 1 -48 0 H0 V109.0 V61.0 Z" transform="translate(8 18)" fill="#b23d36" stroke="#141b4d" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M0 0 H61.0 H109.0 H170 V61.0 V109.0 V170 H109.0 a24 24 0 1 1 -48 0 H0 V109.0 V61.0 Z" fill="#e8574d" stroke="#141b4d" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<g stroke="#ffd166" stroke-width="10" stroke-linecap="round">
+  <path d="M250 84 l24 -10"/><path d="M256 118 l26 -6"/>
+</g>
+</g>
+</svg>
