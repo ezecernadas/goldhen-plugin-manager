@@ -1,6 +1,6 @@
 # Package metadata.
 TITLE       := GoldHEN Plugin Manager
-VERSION     := 01.10
+VERSION     := 01.11
 TITLE_ID    := PLGM00001
 CONTENT_ID  := IV0000-PLGM00001_00-GOLDHENPLUGINMGR
 
